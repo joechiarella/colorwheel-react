@@ -1,21 +1,45 @@
-import { useRef, useEffect } from "react";
-const WIDTH = 550;
+import { useRef, useEffect, useMemo } from "react";
+import * as ColorMath from "./colormath.js";
+const WIDTH = 500;
+const SIZE = 25;
 
-const distance = (h, w) => Math.sqrt(h * h + w * w);
+const sp = ColorMath.getSharedParameters()
 
 function ColorWheel(props) {
-  const { points, size } = props;
+  const { j } = props;
   const canvasRef = useRef(null);
-  const blockSize = WIDTH / size;
+
+  const points = useMemo(() => {
+    console.time("points")
+    const pointArray = [...Array(SIZE)].map((x, row) =>
+      [...Array(SIZE)].map((y, col) => {
+        const offset = (SIZE - 1) / 2;
+        const [r, theta] = ColorMath.cartToPolar(
+          ((col - offset) * 100) / offset,
+          -((row - offset) * 100) / offset
+        );
+
+        const hue = theta;
+        const chroma = r;
+
+        const xyz = ColorMath.JChToXYZ([j, chroma, hue], sp);
+        const rgb = ColorMath.xyzToRGB(xyz);
+        return rgb;
+      })
+    );
+    console.timeEnd("points")
+    return pointArray
+  }, [j])
 
   useEffect(() => {
     const canvas = canvasRef.current;
     const context = canvas.getContext("2d");
 
+    console.time("draw")
     for (let x = 0; x < WIDTH; x++) {
       for (let y = 0; y < WIDTH; y++) {
-        const i = (x * (size - 1)) / WIDTH;
-        const j = (y * (size - 1)) / WIDTH;
+        const i = (x * (SIZE - 1)) / WIDTH;
+        const j = (y * (SIZE - 1)) / WIDTH;
         const iMin = Math.floor(i);
         const iMax = Math.ceil(i);
         const jMin = Math.floor(j);
@@ -50,7 +74,8 @@ function ColorWheel(props) {
         context.fillRect(x, y, 1, 1);
       }
     }
-  }, []);
+    console.timeEnd("draw")
+  }, [points]);
 
   return <canvas ref={canvasRef} width={WIDTH} height={WIDTH} />;
 }
