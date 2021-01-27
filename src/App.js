@@ -1,23 +1,32 @@
-import logo from './logo.svg';
-import './App.css';
+import "./App.css";
+import * as ColorMath from "./colormath.js";
+import ColorWheel from "./ColorWheel.js";
 
+const SIZE = 11;
+
+const sp = ColorMath.getSharedParameters();
 function App() {
+  const points = [...Array(SIZE)].map((x, row) =>
+    [...Array(SIZE)].map((y, col) => {
+      const offset = (SIZE - 1) / 2;
+      const [r, theta] = ColorMath.cartToPolar(
+        ((col - offset) * 100) / offset,
+        -((row - offset) * 100) / offset
+      );
+
+      const hue = theta;
+      const chroma = r;
+      const J = 70;
+
+      const xyz = ColorMath.JChToXYZ([J, chroma, hue], sp);
+      const rgb = ColorMath.xyzToRGB(xyz);
+      return rgb;
+    })
+  );
+
   return (
     <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+      <ColorWheel points={points} size={SIZE} />
     </div>
   );
 }
