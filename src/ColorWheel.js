@@ -79,7 +79,7 @@ function ColorWheel(props) {
           rgb10[2] * ip * (1 - jp) +
           rgb11[2] * ip * jp;
 
-        const offset = (x + y * WIDTH) * 4;
+        const offset = (y + x * WIDTH) * 4;
         data[offset] = r * 2.55;
         data[offset + 1] = g * 2.55;
         data[offset + 2] = b * 2.55;
