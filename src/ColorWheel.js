@@ -3,14 +3,14 @@ import * as ColorMath from "./colormath.js";
 const WIDTH = 500;
 const SIZE = 25;
 
-const sp = ColorMath.getSharedParameters()
+const sp = ColorMath.getSharedParameters();
 
 function ColorWheel(props) {
   const { j } = props;
   const canvasRef = useRef(null);
 
   const points = useMemo(() => {
-    console.time("points")
+    console.time("points");
     const pointArray = [...Array(SIZE)].map((x, row) =>
       [...Array(SIZE)].map((y, col) => {
         const offset = (SIZE - 1) / 2;
@@ -18,6 +18,10 @@ function ColorWheel(props) {
           ((col - offset) * 100) / offset,
           -((row - offset) * 100) / offset
         );
+
+        if (r > 110.0) {
+          return [100, 100, 100];
+        }
 
         const hue = theta;
         const chroma = r;
@@ -27,17 +31,22 @@ function ColorWheel(props) {
         return rgb;
       })
     );
-    console.timeEnd("points")
-    return pointArray
-  }, [j])
+    console.timeEnd("points");
+    return pointArray;
+  }, [j]);
 
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    const context = canvas.getContext("2d");
-
-    console.time("draw")
+  const image = useMemo(() => {
+    console.time("imageData");
+    const data = new Uint8ClampedArray(4 * WIDTH * WIDTH);
     for (let x = 0; x < WIDTH; x++) {
       for (let y = 0; y < WIDTH; y++) {
+        const dx = Math.abs(WIDTH / 2 - x);
+        const dy = Math.abs(WIDTH / 2 - y);
+        const rad = Math.sqrt(dx * dx + dy * dy);
+        if (rad > WIDTH / 2) {
+          continue;
+        }
+
         const i = (x * (SIZE - 1)) / WIDTH;
         const j = (y * (SIZE - 1)) / WIDTH;
         const iMin = Math.floor(i);
@@ -70,12 +79,30 @@ function ColorWheel(props) {
           rgb10[2] * ip * (1 - jp) +
           rgb11[2] * ip * jp;
 
-        context.fillStyle = `rgb(${r * 2.55}, ${g * 2.55}, ${b * 2.55})`;
-        context.fillRect(x, y, 1, 1);
+        const offset = (x + y * WIDTH) * 4;
+        data[offset] = r * 2.55;
+        data[offset + 1] = g * 2.55;
+        data[offset + 2] = b * 2.55;
+        data[offset + 3] = 255;
       }
     }
-    console.timeEnd("draw")
+
+    const imgData = new ImageData(data, WIDTH, WIDTH);
+
+    console.timeEnd("imageData");
+    return imgData;
   }, [points]);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    // const canvas = new OffscreenCanvas(WIDTH, WIDTH);
+    const context = canvas.getContext("2d", { alpha: false });
+
+    console.time("draw");
+    context.putImageData(image, 0, 0);
+
+    console.timeEnd("draw");
+  }, [image]);
 
   return <canvas ref={canvasRef} width={WIDTH} height={WIDTH} />;
 }
